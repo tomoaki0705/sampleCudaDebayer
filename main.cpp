@@ -39,6 +39,7 @@ template<> void launchCudaProcess(dim3 grid, dim3 block, unsigned char* srcImage
 
 template<typename T> void launchDebayerPorcess(int W, int H, int gridX, int gridY, enum processType t = elementWise)
 {
+    (void)t;
     std::vector<double> uploadHistory, downloadHistory, processHistory;
     for (size_t iTest = 0; iTest < 20; iTest++)
     {
@@ -57,13 +58,14 @@ template<typename T> void launchDebayerPorcess(int W, int H, int gridX, int grid
 	    dim3 block(gridX, gridY, 1); // 16,16
 	    dim3 grid(W / block.x * 2, H / block.y * 2, 1);
 
-        int startCount = cv::getTickCount();
+        int64 startCount = cv::getTickCount();
         CUDA_SAFE_CALL(cudaMemcpy(bayerImage, cpuSrc, size, cudaMemcpyHostToDevice));
-        int startProcess = cv::getTickCount();
+        int64 startProcess = cv::getTickCount();
         launchCudaProcess<T>(grid, block, bayerImage, colorImage, W, H);
-        int processFinished = cv::getTickCount();
+        cudaDeviceSynchronize();
+        int64 processFinished = cv::getTickCount();
         CUDA_SAFE_CALL(cudaMemcpy(cpuDst, colorImage, size * 3, cudaMemcpyDeviceToHost));
-        int copyFinished = cv::getTickCount();
+        int64 copyFinished = cv::getTickCount();
 
 	    CUDA_SAFE_CALL(cudaFree((void*)bayerImage));
 	    CUDA_SAFE_CALL(cudaFree((void*)colorImage));
